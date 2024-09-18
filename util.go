@@ -1,4 +1,4 @@
-package rhaprouter
+package gorouter
 
 import (
 	"net/http"

@@ -1,119 +1,87 @@
-package rhaprouter
+package gorouter
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 )
 
 type Context struct {
-	writer      http.ResponseWriter
-	request     *http.Request
-	statusCode  int
-	requestTime time.Time
+	writer     http.ResponseWriter
+	request    *http.Request
+	statusCode int
 }
 
 type Map map[string]interface{}
 
-/*
-	Request
-*/
-func (fwc *Context) Request() *http.Request {
-	return fwc.request
+// Request returns *http.Request
+func (c *Context) Request() *http.Request {
+	return c.request
 }
 
-func (fwc *Context) Query(key string) string {
-	return fwc.request.URL.Query().Get(key)
+func (c *Context) Query(key string) string {
+	return c.request.URL.Query().Get(key)
 }
 
-func (fwc *Context) Param(key string) string {
-	ctx := fwc.request.Context()
+func (c *Context) Param(key string) string {
+	ctx := c.request.Context()
 	params := ctx.Value("params").(map[string]string)
 	return params[key]
 }
 
-func (fwc *Context) Body(v interface{}) error {
-	return json.NewDecoder(fwc.request.Body).Decode(v)
+func (c *Context) Body(v interface{}) error {
+	return json.NewDecoder(c.request.Body).Decode(v)
 }
 
-func (fwc *Context) Cookies() []*http.Cookie {
-	return fwc.request.Cookies()
+func (c *Context) Cookies() []*http.Cookie {
+	return c.request.Cookies()
 }
 
-func (fwc *Context) Cookie(name string) (*http.Cookie, error) {
-	return fwc.request.Cookie(name)
+func (c *Context) Cookie(name string) (*http.Cookie, error) {
+	return c.request.Cookie(name)
 }
 
-func (fwc *Context) AddContext(key string, value interface{}) {
-	c := context.WithValue(fwc.request.Context(), key, value)
-	fwc.request = fwc.request.WithContext(c)
+func (c *Context) AddContext(key string, value interface{}) {
+	ctx := context.WithValue(c.request.Context(), key, value)
+	c.request = c.request.WithContext(ctx)
 }
 
-func (fwc *Context) GetContext(key string) interface{} {
-	ctx := fwc.request.Context()
+func (c *Context) GetContext(key string) interface{} {
+	ctx := c.request.Context()
 	return ctx.Value(key)
 }
 
-/*
-	ResponseWriter
-*/
-func (fwc *Context) ResponseWriter() http.ResponseWriter {
-	return fwc.writer
+// ResponseWriter returns http.ResponseWriter
+func (c *Context) ResponseWriter() http.ResponseWriter {
+	return c.writer
 }
 
-func (fwc *Context) Header(key string) string {
-	return fwc.writer.Header().Get(key)
+func (c *Context) Header(key string) string {
+	return c.writer.Header().Get(key)
 }
 
-func (fwc *Context) ContentType(value string) {
-	fwc.writer.Header().Set("Content-Type", value)
+func (c *Context) ContentType(value string) {
+	c.writer.Header().Set("Content-Type", value)
 }
 
-func (fwc *Context) StatusCode(statusCode int) *Context {
-	fwc.statusCode = generateStatusCode(statusCode)
-	return fwc
+func (c *Context) SetHeader(key, value string) {
+	c.writer.Header().Set(key, value)
 }
 
-func (fwc *Context) SetHeader(key, value string) {
-	fwc.writer.Header().Set(key, value)
+func (c *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(c.writer, cookie)
 }
 
-func (fwc *Context) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(fwc.writer, cookie)
+func (c *Context) Write(statusCode int, res string) {
+	c.writer.Header().Set("Content-Type", "text/plain")
+	c.writer.WriteHeader(statusCode)
+
+	_, _ = c.writer.Write([]byte(res))
 }
 
-func (fwc *Context) Write(res string) (int, error) {
-	fwc.writer.Header().Set("Content-Type", "text/plain")
-	fwc.writer.WriteHeader(fwc.getStatusCode())
+func (c *Context) JSON(statusCode int, v interface{}) {
+	c.writer.Header().Set("Content-Type", "application/json")
+	c.writer.WriteHeader(statusCode)
 
-	return fwc.writer.Write([]byte(res))
-}
-
-func (fwc *Context) JSON(v interface{}) error {
-	fwc.writer.Header().Set("Content-Type", "application/json")
-	fwc.writer.WriteHeader(fwc.getStatusCode())
-
-	return json.NewEncoder(fwc.writer).Encode(v)
-}
-
-func (fwc *Context) getStatusCode() int {
-	if fwc.statusCode == 0 {
-		return http.StatusOK
-	}
-	return fwc.statusCode
-}
-
-func generateStatusCode(statusCode int) int {
-	if statusCode == 0 {
-		return http.StatusOK
-	}
-	return statusCode
-}
-
-/*
-	Additional
-*/
-func (fwc *Context) RequestTime() time.Time {
-	return fwc.requestTime
+	_ = json.NewEncoder(c.writer).Encode(v)
 }

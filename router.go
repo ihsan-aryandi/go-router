@@ -1,9 +1,8 @@
-package rhaprouter
+package gorouter
 
 import (
 	"context"
 	"net/http"
-	"time"
 )
 
 type Router struct {
@@ -57,15 +56,16 @@ func (rtr *Router) Use(m ...Middleware) {
 	rtr.middlewares = append(rtr.middlewares, m...)
 }
 
+// Listen listens on the TCP network address addr and then calls Serve with handler to handle requests on incoming connections.
+// Accepted connections are configured to enable TCP keep-alives.
 func (rtr *Router) Listen(port string) error {
 	return http.ListenAndServe(port, rtr)
 }
 
 func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := &Context{
-		writer:      w,
-		request:     r,
-		requestTime: time.Now(),
+		writer:  w,
+		request: r,
 	}
 	for _, route := range rtr.routes {
 		params := route.match(r)
@@ -76,19 +76,16 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c := context.WithValue(ctx.request.Context(), "params", params)
 		ctx.request = ctx.request.WithContext(c)
 
-		err := rtr.execute(route, ctx)
-		if err != nil {
-			panic(err)
-		}
+		rtr.execute(route, ctx)
 		return
 	}
 
 	http.NotFound(w, r)
 }
 
-func (rtr *Router) execute(route RouteEntry, ctx *Context) error {
+func (rtr *Router) execute(route RouteEntry, ctx *Context) {
 	h := applyMiddleware(route.HandlerFunc, rtr.middlewares...)
-	return h(ctx)
+	h(ctx)
 }
 
 func (rtr *Router) addRouteEntry(method, path string, handler Handler) {
@@ -96,8 +93,8 @@ func (rtr *Router) addRouteEntry(method, path string, handler Handler) {
 	exactPath := generatePath(path)
 
 	rtr.routes = append(rtr.routes, RouteEntry{
-		Method: method,
-		Path: exactPath,
+		Method:      method,
+		Path:        exactPath,
 		HandlerFunc: handler,
 	})
 }

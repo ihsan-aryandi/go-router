@@ -1,3 +1,3 @@
-module github.com/bandungrhapsody/rhaprouter
+module github.com/ihsan-aryandi/go-router
 
 go 1.15

@@ -1,4 +1,4 @@
-package rhaprouter
+package gorouter
 
 import (
 	"net/http"
@@ -11,7 +11,7 @@ type RouteEntry struct {
 	HandlerFunc Handler
 }
 
-type Handler func(ctx *Context) error
+type Handler func(ctx *Context)
 
 func (re *RouteEntry) match(r *http.Request) map[string]string {
 	if !isMethodMatches(r, re) {
