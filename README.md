@@ -126,7 +126,7 @@ func main() {
 
 Dengan fungsi ini, anda dapat membuat banyak endpoint dengan method yang bermacam-macam di satu path yang sama.
 
-Cara menggunakannya cukup jalankan fungsi `GroupRoutes`, berikut contoh penggunaannya :
+Cara menggunakannya cukup jalankan fungsi `Routes`, berikut contoh penggunaannya :
 
 ``` go
 package main
